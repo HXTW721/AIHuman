@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>NOVA — 视觉稿 v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- 非阻塞加载：网络受限时直接回退到系统字体，不阻塞首屏 -->
+<link rel="stylesheet" media="print" onload="this.media='all'"
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" />
+<style>
+  /* ============================================================
+     NOVA — 静态视觉稿 v1
+     仅用于确定美术方向，不是最终实现。
+     ============================================================ */
+
+  :root {
+    --bg:        #07080f;
+    --glow:      #5b8cff;
+    --ambient:   #0b1020;
+    --accent:    #8fb6ff;
+
+    --text:      rgba(236, 240, 255, .94);
+    --text-dim:  rgba(176, 188, 215, .56);
+    --text-faint:rgba(176, 188, 215, .34);
+    --line:      rgba(255, 255, 255, .08);
+    --line-soft: rgba(255, 255, 255, .045);
+    --panel:     rgba(9, 11, 19, .74);
+
+    --sans: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI",
+            "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --mono: "JetBrains Mono", "Cascadia Code", Consolas, "SF Mono", monospace;
+
+    --ease: cubic-bezier(.16, 1, .3, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; border: 0; background: none; }
+  :focus-visible { outline: 1px solid var(--glow); outline-offset: 3px; border-radius: 6px; }
+
+  /* ---------- stage ---------- */
+
+  .stage { position: fixed; inset: 0; overflow: hidden; }
+  .stage.is-shifting .texture { opacity: .9; }
+
+  .aurora { position: absolute; inset: 0; overflow: hidden; }
+
+  .aurora__blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    transition: background-color 1.3s var(--ease), opacity 1.3s var(--ease);
+    will-change: transform;
+  }
+
+  .aurora__blob--a {
+    width: 70vmax; height: 70vmax;
+    top: -32vmax; left: -18vmax;
+    background-color: var(--ambient);
+    opacity: .95;
+    animation: drift-a 32s ease-in-out infinite;
+  }
+  .aurora__blob--b {
+    width: 48vmax; height: 48vmax;
+    top: 6vmax; right: -16vmax;
+    background-color: var(--glow);
+    opacity: .13;
+    animation: drift-b 41s ease-in-out infinite;
+  }
+  .aurora__blob--c {
+    width: 54vmax; height: 54vmax;
+    bottom: -34vmax; left: 22vmax;
+    background-color: var(--glow);
+    opacity: .10;
+    animation: drift-c 36s ease-in-out infinite;
+  }
+
+  @keyframes drift-a {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(4vmax, 3vmax, 0) scale(1.08); }
+  }
+  @keyframes drift-b {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(-5vmax, 4vmax, 0) scale(1.12); }
+  }
+  @keyframes drift-c {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    50%      { transform: translate3d(3vmax, -4vmax, 0) scale(1.06); }
+  }
+
+  #scene {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
+  }
+
+  .texture {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    transition: opacity .6s var(--ease);
+  }
+
+  .texture--grain {
+    inset: -60%;
+    opacity: .035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+    animation: grain-shift 7s steps(8) infinite;
+  }
+
+  @keyframes grain-shift {
+    0%   { transform: translate3d(0, 0, 0); }
+    25%  { transform: translate3d(-2%, 3%, 0); }
+    50%  { transform: translate3d(3%, -1%, 0); }
+    75%  { transform: translate3d(-1%, -3%, 0); }
+    100% { transform: translate3d(0, 0, 0); }
+  }
+
+  .texture--vignette {
+    background: radial-gradient(ellipse 78% 68% at 50% 44%,
+                transparent 38%, rgba(2, 3, 8, .62) 100%);
+  }
+
+  /* ---------- top bar ---------- */
+
+  .topbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 26px 34px;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .topbar > * { pointer-events: auto; }
+  .topbar { transition: padding-right .55s var(--ease); }
+  .stage.panel-open .topbar { padding-right: 416px; }
+
+  .brand { display: flex; align-items: center; gap: 12px; }
+
+  .brand__orb {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--glow);
+    box-shadow: 0 0 14px var(--glow), 0 0 34px var(--glow);
+    transition: background-color .9s var(--ease), box-shadow .9s var(--ease);
+    animation: orb-pulse 4.2s ease-in-out infinite;
+  }
+  @keyframes orb-pulse {
+    0%, 100% { transform: scale(1);   opacity: .85; }
+    50%      { transform: scale(1.35); opacity: 1; }
+  }
+
+  .brand__name {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .28em;
+    line-height: 1;
+  }
+  .brand__sub {
+    margin-top: 5px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .12em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+
+  .topbar__right { display: flex; align-items: center; gap: 10px; }
+
+  .status {
+    display: flex; align-items: center; gap: 8px;
+    height: 30px;
+    padding: 0 13px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .03);
+    backdrop-filter: blur(14px);
+  }
+  .status__dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--c, var(--glow));
+    box-shadow: 0 0 10px var(--c, var(--glow));
+    transition: background-color .7s var(--ease), box-shadow .7s var(--ease);
+    animation: dot-blink 2.6s ease-in-out infinite;
+  }
+  @keyframes dot-blink { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+  .status__code {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .08em;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .03);
+    color: var(--text-dim);
+    backdrop-filter: blur(14px);
+    transition: color .2s, border-color .2s, background .2s;
+  }
+  .icon-btn:hover { color: var(--text); border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.06); }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* ---------- speech bubble ---------- */
+
+  .bubble {
+    position: absolute;
+    z-index: 20;
+    max-width: 320px;
+    padding: 11px 17px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, .10);
+    background: rgba(13, 16, 27, .84);
+    backdrop-filter: blur(20px) saturate(1.2);
+    box-shadow: 0 22px 60px -22px rgba(0, 0, 0, .95),
+                inset 0 1px 0 rgba(255, 255, 255, .07);
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: rgba(242, 246, 255, .92);
+    opacity: 0;
+    transform: translate(-50%, -100%) translateY(8px) scale(.97);
+    transform-origin: 50% 100%;
+    pointer-events: none;
+    transition: opacity .34s var(--ease), transform .5s var(--ease);
+  }
+  .bubble.show {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(0) scale(1);
+  }
+  .bubble::after {
+    content: "";
+    position: absolute;
+    left: 50%; bottom: -5px;
+    width: 9px; height: 9px;
+    background: rgba(13, 16, 27, .84);
+    border-right: 1px solid rgba(255, 255, 255, .10);
+    border-bottom: 1px solid rgba(255, 255, 255, .10);
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .bubble--system {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .02em;
+    color: rgba(200, 214, 245, .92);
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, .16);
+  }
+
+  /* ---------- dock ---------- */
+
+  .dock {
+    position: absolute;
+    left: 50%; bottom: 34px;
+    transform: translateX(-50%);
+    z-index: 30;
+    width: min(560px, calc(100vw - 48px));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .composer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 54px;
+    padding: 0 7px 0 21px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .09);
+    background: rgba(255, 255, 255, .042);
+    backdrop-filter: blur(22px) saturate(1.25);
+    box-shadow: 0 26px 70px -30px rgba(0, 0, 0, .95),
+                inset 0 1px 0 rgba(255, 255, 255, .06);
+    transition: border-color .3s var(--ease), background .3s var(--ease);
+  }
+  .composer:focus-within {
+    border-color: color-mix(in srgb, var(--glow) 55%, transparent);
+    background: rgba(255, 255, 255, .055);
+    box-shadow: 0 26px 70px -30px rgba(0, 0, 0, .95),
+                0 0 0 3px color-mix(in srgb, var(--glow) 12%, transparent),
+                inset 0 1px 0 rgba(255, 255, 255, .08);
+  }
+
+  .composer input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    letter-spacing: .01em;
+    color: var(--text);
+  }
+  .composer input::placeholder { color: var(--text-faint); }
+  .composer input:focus { outline: none; }
+
+  .send {
+    display: grid;
+    place-items: center;
+    width: 40px; height: 40px;
+    flex: 0 0 40px;
+    border-radius: 50%;
+    background: var(--glow);
+    color: #080a12;
+    box-shadow: 0 0 22px -2px color-mix(in srgb, var(--glow) 70%, transparent);
+    transition: transform .2s var(--ease), box-shadow .3s var(--ease), background-color .9s var(--ease);
+  }
+  .send:hover  { transform: scale(1.07); }
+  .send:active { transform: scale(.94); }
+  .send svg { width: 16px; height: 16px; }
+
+  .quick { display: flex; gap: 9px; flex-wrap: wrap; justify-content: center; }
+
+  .chip {
+    height: 33px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .028);
+    backdrop-filter: blur(12px);
+    color: var(--text-dim);
+    font-size: 12.5px;
+    letter-spacing: .04em;
+    transition: color .22s, border-color .22s, background .22s, transform .2s var(--ease);
+  }
+  .chip:hover {
+    color: var(--text);
+    border-color: color-mix(in srgb, var(--glow) 45%, transparent);
+    background: color-mix(in srgb, var(--glow) 9%, transparent);
+  }
+  .chip:active { transform: scale(.96); }
+
+  .hint {
+    position: absolute;
+    bottom: 14px; left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .14em;
+    color: rgba(176, 188, 215, .26);
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* ---------- debug panel ---------- */
+
+  .debug {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 382px;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--line);
+    background: var(--panel);
+    backdrop-filter: blur(30px) saturate(1.3);
+    box-shadow: -40px 0 90px -40px rgba(0, 0, 0, .9);
+    transform: translateX(101%);
+    transition: transform .55s var(--ease);
+  }
+  .debug.open { transform: translateX(0); }
+
+  .debug__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    padding: 0 18px;
+    border-bottom: 1px solid var(--line);
+    flex: 0 0 auto;
+  }
+
+  .debug__title {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  .live {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: #4ade80;
+    box-shadow: 0 0 9px rgba(74, 222, 128, .9);
+    animation: dot-blink 2s ease-in-out infinite;
+  }
+
+  .debug__close {
+    display: grid; place-items: center;
+    height: 24px; padding: 0 9px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .1em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    transition: color .2s, border-color .2s;
+  }
+  .debug__close:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+
+  .debug__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+  }
+  .debug__body::-webkit-scrollbar { width: 6px; }
+  .debug__body::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,.09); border-radius: 3px;
+  }
+
+  .block {
+    padding: 17px 18px;
+    border-bottom: 1px solid var(--line-soft);
+    flex: 0 0 auto;
+  }
+  .block--log {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .block__label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 13px;
+    font-family: var(--mono);
+    font-size: 9px;
+    letter-spacing: .19em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+  .block__label em {
+    font-style: normal;
+    color: var(--text-dim);
+    letter-spacing: .04em;
+  }
+
+  .statecode {
+    font-family: var(--mono);
+    font-size: 21px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    color: var(--glow);
+    text-shadow: 0 0 28px color-mix(in srgb, var(--glow) 55%, transparent);
+    transition: color .8s var(--ease), text-shadow .8s var(--ease);
+  }
+
+  .state-sub {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: .06em;
+  }
+
+  .meters { margin-top: 16px; display: flex; flex-direction: column; gap: 9px; }
+
+  .meter {
+    display: grid;
+    grid-template-columns: 58px 1fr 34px;
+    align-items: center;
+    gap: 10px;
+  }
+  .meter span {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .06em;
+    color: var(--text-faint);
+  }
+  .meter em {
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 9.5px;
+    text-align: right;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .track {
+    position: relative;
+    height: 3px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, .07);
+    overflow: hidden;
+  }
+  .track i {
+    position: absolute; inset: 0 auto 0 0;
+    border-radius: 2px;
+    background: linear-gradient(90deg,
+      color-mix(in srgb, var(--glow) 45%, transparent), var(--glow));
+    box-shadow: 0 0 11px color-mix(in srgb, var(--glow) 65%, transparent);
+    transition: width .75s var(--ease), background .8s var(--ease);
+  }
+
+  .force-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+  .force {
+    height: 31px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .022);
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .03em;
+    color: var(--text-dim);
+    transition: all .22s var(--ease);
+  }
+  .force:hover {
+    color: var(--text);
+    border-color: rgba(255, 255, 255, .17);
+    background: rgba(255, 255, 255, .05);
+  }
+  .force.is-active {
+    color: #080a12;
+    background: var(--glow);
+    border-color: transparent;
+    box-shadow: 0 0 20px -4px color-mix(in srgb, var(--glow) 70%, transparent);
+    font-weight: 600;
+  }
+
+  .seg {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .018);
+  }
+  .seg button {
+    position: relative;
+    height: 29px;
+    border-radius: 6px;
+    font-size: 11px;
+    letter-spacing: .02em;
+    color: var(--text-faint);
+    transition: all .22s var(--ease);
+  }
+  .seg button.is-active {
+    color: var(--text);
+    background: rgba(255, 255, 255, .07);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .seg button[disabled] { cursor: not-allowed; opacity: .45; }
+  .seg button .soon {
+    margin-left: 5px;
+    font-family: var(--mono);
+    font-size: 7.5px;
+    letter-spacing: .08em;
+    vertical-align: 1px;
+    opacity: .7;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 20px;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-runnable-track {
+    height: 2px; border-radius: 2px; background: rgba(255,255,255,.12);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 11px; height: 11px;
+    margin-top: -4.5px;
+    border-radius: 50%;
+    background: var(--glow);
+    box-shadow: 0 0 13px var(--glow);
+    transition: background-color .8s var(--ease), box-shadow .8s var(--ease);
+  }
+  input[type="range"]::-moz-range-track {
+    height: 2px; border-radius: 2px; background: rgba(255,255,255,.12);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 11px; height: 11px; border: 0; border-radius: 50%;
+    background: var(--glow); box-shadow: 0 0 13px var(--glow);
+  }
+
+  .sysrow { display: flex; gap: 6px; }
+  .sysrow input {
+    flex: 1; min-width: 0;
+    height: 32px;
+    padding: 0 11px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: rgba(0, 0, 0, .22);
+    font-size: 11.5px;
+    color: var(--text);
+    transition: border-color .2s;
+  }
+  .sysrow input::placeholder { color: var(--text-faint); }
+  .sysrow input:focus {
+    outline: none;
+    border-color: color-mix(in srgb, var(--glow) 50%, transparent);
+  }
+  .sysrow button {
+    flex: 0 0 auto;
+    height: 32px;
+    padding: 0 13px;
+    border-radius: 7px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, .045);
+    font-size: 11.5px;
+    color: var(--text-dim);
+    transition: all .2s var(--ease);
+  }
+  .sysrow button:hover { color: var(--text); border-color: rgba(255,255,255,.2); }
+
+  .log {
+    flex: 1 1 auto;
+    min-height: 120px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--mono);
+    font-size: 10px;
+    line-height: 1.5;
+  }
+  .log::-webkit-scrollbar { width: 5px; }
+  .log::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
+
+  .log-row {
+    display: grid;
+    grid-template-columns: 52px 44px 1fr;
+    gap: 6px;
+    padding: 4px 6px;
+    border-radius: 5px;
+    animation: log-in .35s var(--ease);
+  }
+  .log-row:nth-child(odd) { background: rgba(255, 255, 255, .017); }
+
+  @keyframes log-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .log-row time { color: rgba(176, 188, 215, .32); font-variant-numeric: tabular-nums; }
+  .log-src { text-transform: uppercase; letter-spacing: .05em; }
+  .log-src--user   { color: #8fb6ff; }
+  .log-src--quick  { color: #ffb35c; }
+  .log-src--system { color: #35e0b0; }
+  .log-src--debug  { color: #ff7bb0; }
+  .log-msg { color: rgba(210, 220, 240, .66); }
+
+  /* ---------- responsive ---------- */
+
+  @media (max-width: 900px) {
+    .debug { width: 100%; }
+    .topbar { padding: 20px 20px; }
+    .stage.panel-open .topbar { padding-right: 20px; }
+    .dock { bottom: 26px; }
+    .hint { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora__blob, .texture--grain, .brand__orb, .status__dot, .live {
+      animation: none !important;
+    }
+    * { transition-duration: .01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora__blob aurora__blob--a"></div>
+    <div class="aurora__blob aurora__blob--b"></div>
+    <div class="aurora__blob aurora__blob--c"></div>
+  </div>
+
+  <canvas id="scene" aria-hidden="true"></canvas>
+
+  <div class="texture texture--grain" aria-hidden="true"></div>
+  <div class="texture texture--vignette" aria-hidden="true"></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand__orb" aria-hidden="true"></span>
+      <div>
+        <div class="brand__name">NOVA</div>
+        <div class="brand__sub">companion unit · v0.1</div>
+      </div>
+    </div>
+
+    <div class="topbar__right">
+      <div class="status" id="statusChip" aria-live="polite">
+        <span class="status__dot" aria-hidden="true"></span>
+        <span class="status__code" id="statusCode">EMO_IDLE_00</span>
+      </div>
+      <button class="icon-btn" id="debugToggle" aria-label="打开状态调试台" title="调试台 (D)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 6h16M4 12h16M4 18h10" />
+          <circle cx="18" cy="18" r="2" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="bubble" id="bubble" role="status" aria-live="polite"></div>
+
+  <section class="dock">
+    <form class="composer" id="composer">
+      <input id="input" type="text" placeholder="和它说点什么…"
+             autocomplete="off" spellcheck="false" aria-label="和角色对话" />
+      <button class="send" type="submit" aria-label="发送">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 19V5M5 12l7-7 7 7" />
+        </svg>
+      </button>
+    </form>
+
+    <div class="quick">
+      <button class="chip" data-action="pat">摸摸头</button>
+      <button class="chip" data-action="praise">夸夸它</button>
+      <button class="chip" data-action="lull">哄它睡觉</button>
+    </div>
+  </section>
+
+  <div class="hint">D 打开调试台</div>
+
+  <aside class="debug" id="debug" aria-label="状态调试台">
+    <div class="debug__head">
+      <div class="debug__title"><span class="live" aria-hidden="true"></span>State Monitor</div>
+      <button class="debug__close" id="debugClose">esc</button>
+    </div>
+
+    <div class="debug__body">
+      <section class="block">
+        <div class="block__label">Current State</div>
+        <div class="statecode" id="stateCode">EMO_IDLE_00</div>
+        <div class="state-sub" id="stateSub">待机 · 呼吸平稳</div>
+        <div class="meters">
+          <div class="meter"><span>valence</span><div class="track"><i id="mValence" style="width:52%"></i></div><em id="vValence">0.52</em></div>
+          <div class="meter"><span>arousal</span><div class="track"><i id="mArousal" style="width:28%"></i></div><em id="vArousal">0.28</em></div>
+          <div class="meter"><span>energy</span><div class="track"><i id="mEnergy" style="width:62%"></i></div><em id="vEnergy">0.62</em></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block__label">Force State</div>
+        <div class="force-grid" id="forceGrid"></div>
+      </section>
+
+      <section class="block">
+        <div class="block__label">Character</div>
+        <div class="seg">
+          <button class="is-active" type="button">软体小生命</button>
+          <button type="button" disabled title="GLB 版本将在实现阶段接入">RobotExpressive<span class="soon">SOON</span></button>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="block__label">Light Intensity <em id="lightVal">0.80</em></div>
+        <input type="range" id="light" min="0" max="1.4" step="0.01" value="0.8" aria-label="光强" />
+      </section>
+
+      <section class="block">
+        <div class="block__label">System Message</div>
+        <div class="sysrow">
+          <input id="sysmsg" type="text" placeholder="向主画面发送系统提示…" aria-label="系统提示内容" />
+          <button id="syssend" type="button">发送</button>
+        </div>
+      </section>
+
+      <section class="block block--log">
+        <div class="block__label">Event Log <em id="logCount">00</em></div>
+        <div class="log" id="log"></div>
+      </section>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ============================================================
+     utils
+     ============================================================ */
+
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const lerp  = (a, b, k) => a + (b - a) * k;
+
+  const hex2rgb = (hex) => {
+    const n = parseInt(hex.replace('#', ''), 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  };
+
+  const rgba = (c, a = 1) =>
+    `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`;
+
+  const mix = (a, b, k) => [
+    lerp(a[0], b[0], k),
+    lerp(a[1], b[1], k),
+    lerp(a[2], b[2], k),
+  ];
+
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const MOTION = REDUCED ? 0.35 : 1;
+
+  /* ============================================================
+     mood definitions
+     ============================================================ */
+
+  const EMOTIONS = {
+    idle: {
+      code: 'EMO_IDLE_00', name: 'Idle', label: '待机', desc: '待机 · 呼吸平稳',
+      glow: '#5b8cff', ambient: '#0b1020', accent: '#8fb6ff',
+      valence: .52, arousal: .28, energy: .62,
+      eye: 'open',
+      params: { breathRate: .22, amp: 1.00, bounce: 0.00, squash: 0.00,
+                eyeOpen: 1.00, blush: .02, glowI: .62, rise: .15, size: 1.00,
+                arm: 0.22 },
+    },
+    happy: {
+      code: 'EMO_HAPPY_01', name: 'Happy', label: '开心', desc: '开心 · 雀跃不已',
+      glow: '#ffb35c', ambient: '#16110a', accent: '#ff7a59',
+      valence: .92, arousal: .78, energy: .88,
+      eye: 'happy',
+      params: { breathRate: .75, amp: 1.35, bounce: .85, squash: .18,
+                eyeOpen: .90, blush: .30, glowI: 1.05, rise: .90, size: 1.04,
+                arm: 0.00 },
+    },
+    shy: {
+      code: 'EMO_SHY_02', name: 'Shy', label: '害羞', desc: '害羞 · 缩成一团',
+      glow: '#ff7bb0', ambient: '#140a12', accent: '#ffc2d9',
+      valence: .58, arousal: .62, energy: .44,
+      eye: 'shy',
+      params: { breathRate: .48, amp: .75, bounce: .05, squash: .12,
+                eyeOpen: .50, blush: .95, glowI: .74, rise: .30, size: .90,
+                arm: 0.85 },
+    },
+    sleepy: {
+      code: 'EMO_SLEEPY_03', name: 'Sleepy', label: '困倦', desc: '困倦 · 眼皮沉重',
+      glow: '#4a5ae0', ambient: '#070918', accent: '#8c93c9',
+      valence: .40, arousal: .10, energy: .18,
+      eye: 'sleepy',
+      params: { breathRate: .10, amp: .80, bounce: 0.00, squash: .16,
+                eyeOpen: .12, blush: .08, glowI: .34, rise: -.35, size: .96,
+                arm: 0.70 },
+    },
+    curious: {
+      code: 'EMO_CURIOUS_04', name: 'Curious', label: '好奇', desc: '好奇 · 竖起了耳朵',
+      glow: '#35e0b0', ambient: '#06110f', accent: '#9df5dc',
+      valence: .68, arousal: .66, energy: .74,
+      eye: 'open',
+      params: { breathRate: .38, amp: 1.10, bounce: .22, squash: .02,
+                eyeOpen: 1.05, blush: .06, glowI: .86, rise: .55, size: 1.02,
+                arm: 0.12 },
+    },
+    sad: {
+      code: 'EMO_SAD_05', name: 'Sad', label: '委屈', desc: '委屈 · 眼眶有点湿',
+      glow: '#7d8ba3', ambient: '#080a11', accent: '#b6c1d6',
+      valence: .20, arousal: .15, energy: .28,
+      eye: 'sad',
+      params: { breathRate: .18, amp: .80, bounce: 0.00, squash: .10,
+                eyeOpen: .75, blush: .12, glowI: .42, rise: -.20, size: .95,
+                arm: 0.95 },
+    },
+    angry: {
+      code: 'EMO_ANGRY_06', name: 'Angry', label: '生气', desc: '生气 · 气鼓鼓的',
+      glow: '#ff6b6b', ambient: '#170a0b', accent: '#ff9a8b',
+      valence: .30, arousal: .88, energy: .86,
+      eye: 'angry',
+      params: { breathRate: .95, amp: 1.45, bounce: .10, squash: .22,
+                eyeOpen: .55, blush: .30, glowI: 1.05, rise: .85, size: 1.05,
+                arm: 0.60 },
+    },
+    surprised: {
+      code: 'EMO_SURPRISED_07', name: 'Surprised', label: '惊讶', desc: '惊讶 · 眼睛瞪大了',
+      glow: '#c77dff', ambient: '#100a1a', accent: '#e6b8ff',
+      valence: .56, arousal: .92, energy: .80,
+      eye: 'surprised',
+      params: { breathRate: .55, amp: 1.20, bounce: .40, squash: .00,
+                eyeOpen: 1.15, blush: .08, glowI: 1.12, rise: .75, size: 1.06,
+                arm: 0.02 },
+    },
+    thinking: {
+      code: 'EMO_THINKING_08', name: 'Thinking', label: '思考', desc: '思考 · 眼珠往上飘',
+      glow: '#9fd3e8', ambient: '#08121a', accent: '#cfe9f5',
+      valence: .54, arousal: .38, energy: .52,
+      eye: 'thinking',
+      params: { breathRate: .30, amp: 1.00, bounce: 0.00, squash: .04,
+                eyeOpen: .90, blush: .04, glowI: .70, rise: .35, size: 1.00,
+                arm: 0.35 },
+    },
+    bored: {
+      code: 'EMO_BORED_09', name: 'Bored', label: '无聊', desc: '无聊 · 眼皮都懒得抬',
+      glow: '#a39a8c', ambient: '#0f0e0c', accent: '#cfc7ba',
+      valence: .34, arousal: .12, energy: .24,
+      eye: 'bored',
+      params: { breathRate: .12, amp: .65, bounce: 0.00, squash: .12,
+                eyeOpen: .45, blush: .02, glowI: .38, rise: -.10, size: .96,
+                arm: 0.75 },
+    },
+    clingy: {
+      code: 'EMO_CLINGY_10', name: 'Clingy', label: '撒娇', desc: '撒娇 · 手心都张开了',
+      glow: '#ffa8c8', ambient: '#170a10', accent: '#ffd6e6',
+      valence: .88, arousal: .70, energy: .80,
+      eye: 'clingy',
+      params: { breathRate: .50, amp: 1.15, bounce: .30, squash: .05,
+                eyeOpen: 1.05, blush: .55, glowI: .95, rise: .65, size: 1.06,
+                arm: 0.00 },
+    },
+  };
+
+  const REPLIES = {
+    idle:    ['嗯，我在。', '……怎么了？', '就这样待着也很好。'],
+    happy:   ['嘿嘿，被你夸到了！', '真的吗？我今天闪闪发光！', '开心！再来一次！'],
+    shy:     ['别、别这样看着我啦…', '才没有脸红呢。', '……再摸一下也不是不行。'],
+    sleepy:  ['好困…让我眯一小会儿…', '晚安…你也早点睡…', '嗯…眼皮好重…'],
+    curious: ['诶？那是什么？', '为什么呀？说给我听听。', '嗯…我好像没听懂。'],
+    sad:     ['呜…你是不是不喜欢我了。', '……可以再陪我一会儿吗。', '我有一点难过。'],
+    angry:   ['哼！才不理你呢。', '我真的生气了！', '……你要是道歉，我就原谅你。'],
+    surprised: ['诶？！', '哇…真的吗？', '你吓我一跳！'],
+    thinking: ['嗯…让我想一想。', '这个问题有点难。', '……你等我一下。'],
+    bored:   ['好无聊啊…', '有什么好玩的吗？', '……我们做点什么吧。'],
+    clingy:  ['抱抱！', '再陪我一会儿嘛。', '你在的时候我最开心了。'],
+  };
+
+  /* ============================================================
+     state
+     ============================================================ */
+
+  const state = {
+    key: 'idle',
+    vals: { ...EMOTIONS.idle.params },
+    tgt:  { ...EMOTIONS.idle.params },
+    glow:   hex2rgb(EMOTIONS.idle.glow),
+    glowT:  hex2rgb(EMOTIONS.idle.glow),
+    accent: hex2rgb(EMOTIONS.idle.accent),
+    accentT:hex2rgb(EMOTIONS.idle.accent),
+    light: 0.8,
+  };
+
+  const pointer = { x: 0, y: 0 };
+
+  /* ============================================================
+     dom
+     ============================================================ */
+
+  const stage      = document.getElementById('stage');
+  const canvas     = document.getElementById('scene');
+  const ctx        = canvas.getContext('2d');
+  const bubble     = document.getElementById('bubble');
+  const debugPanel = document.getElementById('debug');
+  const statusChip = document.getElementById('statusChip');
+  const statusCode = document.getElementById('statusCode');
+  const stateCodeEl= document.getElementById('stateCode');
+  const stateSub   = document.getElementById('stateSub');
+  const forceGrid  = document.getElementById('forceGrid');
+  const logEl      = document.getElementById('log');
+  const logCount   = document.getElementById('logCount');
+  const lightInput = document.getElementById('light');
+  const lightVal   = document.getElementById('lightVal');
+  const sysmsg     = document.getElementById('sysmsg');
+  const syssend    = document.getElementById('syssend');
+  const input      = document.getElementById('input');
+
+  const meterEls = {
+    valence: { bar: document.getElementById('mValence'), num: document.getElementById('vValence') },
+    arousal: { bar: document.getElementById('mArousal'), num: document.getElementById('vArousal') },
+    energy:  { bar: document.getElementById('mEnergy'),  num: document.getElementById('vEnergy')  },
+  };
+
+  /* ============================================================
+     canvas sizing
+     ============================================================ */
+
+  let W = 0, H = 0, DPR = 1;
+
+  function resize() {
+    DPR = clamp(window.devicePixelRatio || 1, 1, 2);
+    W = stage.clientWidth;
+    H = stage.clientHeight;
+    canvas.width  = Math.round(W * DPR);
+    canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    layoutBubble();
+  }
+
+  function layoutBubble() {
+    const base = Math.min(W * 0.155, H * 0.212, 196);
+    bubble.style.left = (W / 2) + 'px';
+    bubble.style.top  = Math.max(88, H * 0.395 - base * 1.18) + 'px';
+  }
+
+  window.addEventListener('resize', resize);
+
+  /* ============================================================
+     emotion switching
+     ============================================================ */
+
+  let logTotal = 0;
+
+  function setEmotion(key, source = 'debug', note = '') {
+    const emo = EMOTIONS[key];
+    if (!emo) return;
+
+    state.key = key;
+    state.tgt = { ...emo.params };
+    state.glowT   = hex2rgb(emo.glow);
+    state.accentT = hex2rgb(emo.accent);
+
+    document.documentElement.style.setProperty('--glow', emo.glow);
+    document.documentElement.style.setProperty('--ambient', emo.ambient);
+    document.documentElement.style.setProperty('--accent', emo.accent);
+    statusChip.style.setProperty('--c', emo.glow);
+
+    statusCode.textContent = emo.code;
+    stateCodeEl.textContent = emo.code;
+    stateSub.textContent = emo.desc;
+
+    for (const k of ['valence', 'arousal', 'energy']) {
+      const v = emo[k];
+      meterEls[k].bar.style.width = (v * 100).toFixed(0) + '%';
+      meterEls[k].num.textContent = v.toFixed(2);
+    }
+
+    [...forceGrid.children].forEach(btn => {
+      btn.classList.toggle('is-active', btn.dataset.emo === key);
+    });
+
+    if (source !== 'boot') {
+      addLog(source, note || ('→ ' + emo.code));
+    }
+  }
+
+  function say(text, system = false) {
+    bubble.textContent = text;
+    bubble.classList.toggle('bubble--system', system);
+    bubble.classList.add('show');
+    clearTimeout(say._t);
+    say._t = setTimeout(() => bubble.classList.remove('show'), 4200);
+  }
+
+  /* ============================================================
+     log
+     ============================================================ */
+
+  function addLog(source, text) {
+    const row = document.createElement('div');
+    row.className = 'log-row';
+
+    const t = document.createElement('time');
+    t.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+
+    const s = document.createElement('span');
+    s.className = 'log-src log-src--' + source;
+    s.textContent = source;
+
+    const m = document.createElement('span');
+    m.className = 'log-msg';
+    m.textContent = text;
+
+    row.append(t, s, m);
+    logEl.prepend(row);
+
+    logTotal += 1;
+    logCount.textContent = String(logTotal).padStart(2, '0');
+
+    while (logEl.children.length > 60) logEl.lastElementChild.remove();
+  }
+
+  /* ============================================================
+     semantic routing (mockup-level)
+     ============================================================ */
+
+  function route(text) {
+    const t = text.toLowerCase();
+
+    if (/难过|委屈|伤心|呜呜|哭|不开心|失落|失望|孤单/.test(t)) return 'sad';
+    if (/生气|讨厌|哼|气死|烦|坏人|滚/.test(t))               return 'angry';
+    if (/困|睡|晚安|累|熬夜|休息|打盹/.test(t))               return 'sleepy';
+    if (/无聊|没意思|好闲|做什么|干嘛呢/.test(t))             return 'bored';
+    if (/抱|陪我|撒娇|贴贴|粘人/.test(t))                     return 'clingy';
+    if (/想想|思考|怎么办|考考|难题|让我想/.test(t))           return 'thinking';
+    if (/哇|惊|吓|真的吗|不会吧|天哪|！|!/.test(t))            return 'surprised';
+    if (/为什么|什么|吗|？|\?|好奇|怎么|哪/.test(t))          return 'curious';
+    if (/喜欢|爱|棒|厉害|可爱|乖|谢谢|夸|么么|亲/.test(t))    return 'happy';
+    if (/摸|头|害羞|脸红|羞/.test(t))                         return 'shy';
+    return 'idle';
+  }
+
+  /* ============================================================
+     rendering
+     ============================================================ */
+
+  function orbPath(c, rx, ry, t, amp, seed) {
+    const N = 96;
+    c.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const w = 1
+        + 0.026 * Math.sin(a * 3 + t * 1.00 + seed) * amp
+        + 0.015 * Math.sin(a * 5 - t * 1.40 + seed * 2.3) * amp;
+      const x = Math.cos(a) * rx * w;
+      const y = Math.sin(a) * ry * w;
+      if (i === 0) c.moveTo(x, y);
+      else c.lineTo(x, y);
+    }
+    c.closePath();
+  }
+
+  function drawOrb(c, rx, ry, t, amp, seed, glow, accent, gI, opts) {
+    const o = opts || {};
+    const R = Math.max(rx, ry);
+    const hi = o.highlight === undefined ? 1 : o.highlight;
+    const rimA = o.rimAlpha === undefined ? 1 : o.rimAlpha;
+
+    /* outer bloom */
+    c.save();
+    orbPath(c, rx, ry, t, amp, seed);
+    c.fillStyle = rgba(glow, 0.045 * gI);
+    c.shadowColor = rgba(glow, 0.85);
+    c.shadowBlur = 60;
+    c.fill();
+    c.restore();
+
+    c.save();
+    orbPath(c, rx, ry, t, amp, seed);
+    c.clip();
+
+    /* membrane */
+    const baseGrad = c.createRadialGradient(0, ry * 0.18, R * 0.03, 0, 0, R * 1.12);
+    baseGrad.addColorStop(0,    rgba(glow, 0.30));
+    baseGrad.addColorStop(0.48, rgba(glow, 0.16));
+    baseGrad.addColorStop(0.86, rgba(glow, 0.09));
+    baseGrad.addColorStop(1,    rgba(glow, 0.24));
+    c.fillStyle = baseGrad;
+    c.fillRect(-R * 1.5, -R * 1.5, R * 3, R * 3);
+
+    /* inner volume */
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    const vol = c.createRadialGradient(0, ry * 0.22, 0, 0, 0, R * 0.95);
+    vol.addColorStop(0,    rgba(accent, 0.24 * gI));
+    vol.addColorStop(0.45, rgba(glow, 0.09 * gI));
+    vol.addColorStop(1,    rgba(glow, 0));
+    c.fillStyle = vol;
+    c.fillRect(-R * 1.5, -R * 1.5, R * 3, R * 3);
+    c.restore();
+
+    /* bottom shading */
+    const shade = c.createLinearGradient(0, -R * 0.05, 0, R * 1.05);
+    shade.addColorStop(0, 'rgba(0,0,0,0)');
+    shade.addColorStop(1, 'rgba(0,0,0,.30)');
+    c.fillStyle = shade;
+    c.fillRect(-R * 1.5, -R * 1.5, R * 3, R * 3);
+
+    /* inner edge shadow */
+    const edgeShade = c.createRadialGradient(0, 0, R * 0.72, 0, 0, R * 1.06);
+    edgeShade.addColorStop(0, 'rgba(0,0,0,0)');
+    edgeShade.addColorStop(1, 'rgba(0,0,0,.30)');
+    c.fillStyle = edgeShade;
+    c.fillRect(-R * 1.5, -R * 1.5, R * 3, R * 3);
+
+    /* soft highlight streak */
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    const hs = Math.PI * 1.08;
+    const he = Math.PI * 1.52;
+    const steps = 16;
+    for (let i = 0; i <= steps; i++) {
+      const p = i / steps;
+      const a = hs + (he - hs) * p;
+      const hx = Math.cos(a) * rx * 0.78;
+      const hy = Math.sin(a) * ry * 0.78;
+      const env = Math.sin(p * Math.PI);
+      const rr = R * 0.06;
+      const g = c.createRadialGradient(hx, hy, 0, hx, hy, rr);
+      g.addColorStop(0, 'rgba(255,255,255,' + (0.15 * env * hi).toFixed(3) + ')');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = g;
+      c.beginPath();
+      c.arc(hx, hy, rr, 0, Math.PI * 2);
+      c.fill();
+    }
+    c.restore();
+
+    c.restore(); /* clip */
+
+    /* bottom refraction */
+    if (o.refraction !== false) {
+      c.save();
+      c.globalCompositeOperation = 'lighter';
+      c.beginPath();
+      c.ellipse(0, 0, rx * 0.93, ry * 0.93, 0, Math.PI * 0.22, Math.PI * 0.78);
+      c.strokeStyle = rgba(accent, 0.085);
+      c.lineWidth = R * 0.028;
+      c.shadowColor = rgba(glow, 0.9);
+      c.shadowBlur = 18;
+      c.stroke();
+      c.restore();
+    }
+
+    /* rim */
+    orbPath(c, rx, ry, t, amp, seed);
+    c.save();
+    if (o.cut) {
+      const p = new Path2D();
+      p.rect(-9999, -9999, 19998, 19998);
+      p.arc(o.cut.x, o.cut.y, o.cut.r, 0, Math.PI * 2);
+      c.clip(p, 'evenodd');
+    }
+    const rimGrad = c.createLinearGradient(-rx * 0.8, -ry * 0.9, rx * 0.7, ry * 0.8);
+    rimGrad.addColorStop(0,    rgba(accent, 0.80 * rimA));
+    rimGrad.addColorStop(0.45, rgba(accent, 0.42 * rimA));
+    rimGrad.addColorStop(1,    rgba(accent, 0.10 * rimA));
+    c.strokeStyle = rimGrad;
+    c.lineWidth = 1.3;
+    c.shadowColor = rgba(glow, 0.90);
+    c.shadowBlur = 20;
+    c.stroke();
+    c.restore();
+  }
+
+  function drawArmBall(c, x, y, r, glow, accent, gI) {
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+
+    /* 外发光 */
+    const og = c.createRadialGradient(x, y, 0, x, y, r * 2.7);
+    og.addColorStop(0,   rgba(glow, 0.22 * gI));
+    og.addColorStop(0.5, rgba(glow, 0.055 * gI));
+    og.addColorStop(1,   rgba(glow, 0));
+    c.fillStyle = og;
+    c.beginPath();
+    c.arc(x, y, r * 2.7, 0, Math.PI * 2);
+    c.fill();
+
+    /* 球体 */
+    const bg = c.createRadialGradient(x - r * 0.34, y - r * 0.38, r * 0.05, x, y, r * 1.04);
+    bg.addColorStop(0,    rgba(mix(glow, [255, 255, 255], 0.48), 0.58));
+    bg.addColorStop(0.45, rgba(glow, 0.34));
+    bg.addColorStop(1,    rgba(glow, 0.12));
+    c.fillStyle = bg;
+    c.beginPath();
+    c.arc(x, y, r, 0, Math.PI * 2);
+    c.fill();
+
+    /* 边缘光 */
+    c.beginPath();
+    c.arc(x, y, r, 0, Math.PI * 2);
+    c.strokeStyle = rgba(accent, 0.55);
+    c.lineWidth = 1.1;
+    c.shadowColor = rgba(glow, 0.9);
+    c.shadowBlur = 14;
+    c.stroke();
+    c.shadowBlur = 0;
+
+    /* 高光 */
+    c.fillStyle = 'rgba(255,255,255,.28)';
+    c.beginPath();
+    c.ellipse(x - r * 0.32, y - r * 0.36, r * 0.18, r * 0.12, -0.5, 0, Math.PI * 2);
+    c.fill();
+
+    c.restore();
+  }
+
+  function drawStar(c, x, y, r, alpha) {
+    c.save();
+    c.translate(x, y);
+    c.globalAlpha = alpha;
+    c.fillStyle = '#ffffff';
+    c.beginPath();
+    c.moveTo(0, -r);
+    c.quadraticCurveTo(0, 0, r, 0);
+    c.quadraticCurveTo(0, 0, 0, r);
+    c.quadraticCurveTo(0, 0, -r, 0);
+    c.quadraticCurveTo(0, 0, 0, -r);
+    c.fill();
+    c.restore();
+  }
+
+  function drawEye(c, x, y, r, shape, openness, side) {
+    c.save();
+    c.translate(x, y);
+    const ink = 'rgba(8, 10, 20, .88)';
+
+    if (shape === 'happy') {
+      c.strokeStyle = ink;
+      c.lineWidth = r * 0.50;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.arc(0, r * 0.16, r * 0.94, Math.PI * 1.14, Math.PI * 1.86);
+      c.stroke();
+    } else if (shape === 'shy') {
+      const m = side === -1 ? 1 : -1;
+      c.strokeStyle = ink;
+      c.lineWidth = r * 0.44;
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+      c.beginPath();
+      c.moveTo(-0.56 * r * m, -0.62 * r);
+      c.lineTo( 0.44 * r * m,  0);
+      c.lineTo(-0.56 * r * m,  0.62 * r);
+      c.stroke();
+    } else if (shape === 'sleepy') {
+      c.strokeStyle = ink;
+      c.lineWidth = r * 0.42;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(-0.72 * r, -0.05 * r);
+      c.quadraticCurveTo(0, 0.34 * r, 0.72 * r, -0.05 * r);
+      c.stroke();
+    } else if (shape === 'sad') {
+      const ry = r * 0.72;
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, r * 0.05, r, ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.beginPath();
+      c.ellipse(-r * 0.28, -ry * 0.12, r * 0.22, ry * 0.20, -0.4, 0, Math.PI * 2);
+      c.fill();
+    } else if (shape === 'angry') {
+      const ry = r * 0.40;
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, r * 0.10, r, ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.beginPath();
+      c.ellipse(-r * 0.28, r * 0.02, r * 0.20, ry * 0.30, -0.3, 0, Math.PI * 2);
+      c.fill();
+
+      const m = side === -1 ? 1 : -1;
+      c.strokeStyle = 'rgba(8,10,20,.78)';
+      c.lineWidth = r * 0.28;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(-r * 0.88 * m, -r * 0.98);
+      c.lineTo( r * 0.78 * m, -r * 0.52);
+      c.stroke();
+    } else if (shape === 'surprised') {
+      const rx = r * 1.08;
+      const ry = r * 1.16;
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.86)';
+      c.beginPath();
+      c.ellipse(-rx * 0.28, -ry * 0.32, rx * 0.24, ry * 0.20, -0.4, 0, Math.PI * 2);
+      c.fill();
+    } else if (shape === 'thinking') {
+      const ry = r * 0.92;
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, -r * 0.10, r, ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.78)';
+      c.beginPath();
+      c.ellipse(-r * 0.28, -r * 0.46, r * 0.24, ry * 0.19, -0.4, 0, Math.PI * 2);
+      c.fill();
+    } else if (shape === 'bored') {
+      const ry = r * 0.42;
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, r * 0.12, r, ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.45)';
+      c.beginPath();
+      c.ellipse(-r * 0.30, r * 0.02, r * 0.20, ry * 0.30, -0.3, 0, Math.PI * 2);
+      c.fill();
+      c.strokeStyle = ink;
+      c.lineWidth = r * 0.22;
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(-r * 0.95, -r * 0.12);
+      c.lineTo(r * 0.95, -r * 0.12);
+      c.stroke();
+    } else if (shape === 'clingy') {
+      const ry = r * 1.02;
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, 0, r, ry, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.90)';
+      c.beginPath();
+      c.ellipse(-r * 0.30, -ry * 0.36, r * 0.30, ry * 0.24, -0.4, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = 'rgba(255,255,255,.55)';
+      c.beginPath();
+      c.ellipse(r * 0.24, ry * 0.30, r * 0.14, ry * 0.11, -0.4, 0, Math.PI * 2);
+      c.fill();
+    } else {
+      const ry = Math.max(r * 0.09, r * 0.96 * openness);
+      c.fillStyle = ink;
+      c.beginPath();
+      c.ellipse(0, 0, r, ry, 0, 0, Math.PI * 2);
+      c.fill();
+
+      c.fillStyle = 'rgba(255, 255, 255, .82)';
+      c.beginPath();
+      c.ellipse(-r * 0.30, -ry * 0.34, r * 0.26, ry * 0.22, -0.4, 0, Math.PI * 2);
+      c.fill();
+    }
+
+    c.restore();
+  }
+
+  const dust = Array.from({ length: 40 }, () => ({
+    seed: Math.random(),
+    orbit: 0.55 + Math.random() * 1.05,
+    angle: Math.random() * Math.PI * 2,
+    speed: 0.06 + Math.random() * 0.16,
+    size: 0.7 + Math.random() * 1.7,
+    drift: 0.25 + Math.random() * 0.75,
+  }));
+
+  const bokeh = Array.from({ length: 14 }, () => ({
+    x: Math.random(),
+    y: Math.random(),
+    r: 7 + Math.random() * 18,
+    a: 0.02 + Math.random() * 0.045,
+    vx: 0.15 + Math.random() * 0.5,
+    vy: 0.1 + Math.random() * 0.35,
+  }));
+
+  function render(t) {
+    const s = state.vals;
+    const glow = state.glow;
+    const accent = state.accent;
+    const gI = s.glowI * state.light;
+
+    ctx.clearRect(0, 0, W, H);
+
+    const base = Math.min(W * 0.155, H * 0.212, 196);
+    const Rh = base * s.size;
+
+    const breath = Math.sin(t * Math.PI * 2 * s.breathRate) * 0.028 * s.amp * MOTION;
+    const hop = Math.abs(Math.sin(t * 2.4)) * 16 * s.bounce * MOTION;
+
+    const cx = W / 2;
+    const cyBase = H * 0.395;
+    const cy = cyBase - hop;
+    const bodyCy = cy + Rh * 1.06;
+    const bodyRx = Rh * 0.52;
+    const bodyRy = Rh * 0.40;
+    const floorY = cyBase + Rh * 1.50;
+
+    const sx = 1 + breath + s.squash * 0.10;
+    const sy = 1 - breath - s.squash * 0.10;
+
+    const wobble = s.amp * MOTION;
+
+    /* ---------- 场景 ---------- */
+
+    /* 顶部氛围光 */
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const beam = ctx.createRadialGradient(cx, -H * 0.18, 0, cx, -H * 0.18, H * 0.92);
+    beam.addColorStop(0,    rgba(glow, 0.105 * gI));
+    beam.addColorStop(0.45, rgba(glow, 0.032 * gI));
+    beam.addColorStop(1,    rgba(glow, 0));
+    ctx.fillStyle = beam;
+    ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+
+    /* 地面光池 */
+    ctx.save();
+    ctx.translate(cx, floorY);
+    ctx.scale(1, 0.24);
+    const pool = ctx.createRadialGradient(0, 0, 0, 0, 0, Rh * 3.2);
+    pool.addColorStop(0,    rgba(glow, 0.30 * gI));
+    pool.addColorStop(0.40, rgba(glow, 0.09 * gI));
+    pool.addColorStop(1,    rgba(glow, 0));
+    ctx.fillStyle = pool;
+    ctx.beginPath();
+    ctx.arc(0, 0, Rh * 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    /* 地面水波 */
+    ctx.save();
+    ctx.translate(cx, floorY);
+    ctx.scale(1, 0.24);
+    for (let i = 0; i < 3; i++) {
+      const p = (t * 0.05 + i / 3) % 1;
+      ctx.beginPath();
+      ctx.arc(0, 0, Rh * (0.5 + p * 2.9), 0, Math.PI * 2);
+      ctx.strokeStyle = rgba(glow, 0.10 * (1 - p) * gI);
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    /* 倒影 */
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.18 * gI;
+    ctx.filter = 'blur(7px)';
+    ctx.translate(0, floorY * 2);
+    ctx.scale(1, -1);
+    ctx.fillStyle = rgba(glow, 0.9);
+    ctx.beginPath();
+    ctx.ellipse(cx, bodyCy, bodyRx, bodyRy, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Rh, Rh * 1.02, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    /* 远景光斑 */
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (const p of bokeh) {
+      const x = ((p.x * (W + 160) + t * p.vx * 8) % (W + 160)) - 80;
+      const y = ((p.y * (H + 160) - t * p.vy * 8) % (H + 160) + H + 160) % (H + 160) - 80;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, p.r);
+      g.addColorStop(0, rgba(glow, p.a * (0.6 + gI * 0.5)));
+      g.addColorStop(1, rgba(glow, 0));
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    /* ---------- 角色 ---------- */
+
+    /* 身体（裁掉与头部重叠的部分，形成连贯剪影） */
+    ctx.save();
+    ctx.translate(cx, bodyCy);
+    ctx.scale(1 + breath * 0.5, 1 - breath * 0.5);
+    const bodyClip = new Path2D();
+    bodyClip.rect(-9999, -9999, 19998, 19998);
+    bodyClip.arc(0, cy - bodyCy, Rh * 1.0, 0, Math.PI * 2);
+    ctx.clip(bodyClip, 'evenodd');
+    drawOrb(ctx, bodyRx, bodyRy, t, wobble * 0.8, 2.7, glow, accent, gI,
+            { highlight: 0.7, rimAlpha: 0.55 });
+    ctx.restore();
+
+    /* 小短手 · 会晃的光球 */
+    const ballR = Rh * 0.12;
+    const armDist = bodyRx * 0.88 + ballR * 0.7;
+    for (const side of [-1, 1]) {
+      const sway = Math.sin(t * 1.7 + side * 1.25) * 0.055 * MOTION;
+      const hang = s.arm + sway + Math.sin(t * 4.2) * 0.05 * s.bounce;
+      const bx = cx + side * Math.cos(hang) * armDist;
+      const by = bodyCy + Math.sin(hang) * armDist
+                 + Math.sin(t * 2.4 - 0.9 + side * 0.18) * 7 * s.bounce * MOTION;
+      drawArmBall(ctx, bx, by, ballR, glow, accent, gI);
+    }
+
+    /* 头 */
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(sx, sy);
+
+    drawOrb(ctx, Rh, Rh * 1.02, t, wobble, 0, glow, accent, gI, { refraction: false });
+
+    const lookX = clamp(pointer.x * Rh * 0.05, -Rh * 0.05, Rh * 0.05);
+    const lookY = clamp(pointer.y * Rh * 0.04, -Rh * 0.04, Rh * 0.04);
+    const eyeR = Rh * 0.125;
+    const eyeX = Rh * 0.31;
+    const eyeY = -Rh * 0.03 + lookY;
+
+    drawEye(ctx, -eyeX + lookX, eyeY, eyeR, EMOTIONS[state.key].eye, s.eyeOpen, -1);
+    drawEye(ctx,  eyeX + lookX, eyeY, eyeR, EMOTIONS[state.key].eye, s.eyeOpen,  1);
+
+    if (s.blush > 0.02) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (const side of [-1, 1]) {
+        const bx = side * Rh * 0.47;
+        const by = Rh * 0.28;
+        const b = ctx.createRadialGradient(bx, by, 0, bx, by, Rh * 0.24);
+        b.addColorStop(0, rgba(accent, 0.13 * s.blush));
+        b.addColorStop(1, rgba(accent, 0));
+        ctx.fillStyle = b;
+        ctx.beginPath();
+        ctx.ellipse(bx, by, Rh * 0.24, Rh * 0.15, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    /* 委屈的泪滴 */
+    if (state.key === 'sad') {
+      const tp = (t * 0.34) % 1;
+      const tx = -Rh * 0.31;
+      const ty = Rh * 0.05 + tp * Rh * 0.24;
+      ctx.save();
+      ctx.globalAlpha = Math.sin(tp * Math.PI) * 0.8;
+      ctx.fillStyle = rgba(accent, 0.85);
+      ctx.beginPath();
+      ctx.moveTo(tx, ty - Rh * 0.042);
+      ctx.quadraticCurveTo(tx + Rh * 0.026, ty + Rh * 0.008, tx, ty + Rh * 0.024);
+      ctx.quadraticCurveTo(tx - Rh * 0.026, ty + Rh * 0.008, tx, ty - Rh * 0.042);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    /* 嘴 */
+    if (EMOTIONS[state.key].eye !== 'sleepy') {
+      const shape = EMOTIONS[state.key].eye;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(8, 10, 20, .48)';
+      ctx.lineWidth = Math.max(1.8, Rh * 0.020);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      if (shape === 'happy' || shape === 'clingy') {
+        ctx.arc(0, Rh * 0.21, Rh * 0.14, 0.16 * Math.PI, 0.84 * Math.PI);
+      } else if (shape === 'shy') {
+        ctx.arc(0, Rh * 0.27, Rh * 0.040, 0, Math.PI * 2);
+      } else if (shape === 'surprised') {
+        ctx.arc(0, Rh * 0.28, Rh * 0.072, 0, Math.PI * 2);
+      } else if (shape === 'sad' || shape === 'angry') {
+        ctx.arc(0, Rh * 0.36, Rh * 0.10, 1.15 * Math.PI, 1.85 * Math.PI);
+      } else if (shape === 'bored') {
+        ctx.moveTo(-Rh * 0.065, Rh * 0.30);
+        ctx.lineTo(Rh * 0.065, Rh * 0.30);
+      } else if (shape === 'thinking') {
+        ctx.moveTo(-Rh * 0.060, Rh * 0.29);
+        ctx.quadraticCurveTo(-Rh * 0.020, Rh * 0.26, Rh * 0.020, Rh * 0.29);
+        ctx.quadraticCurveTo(Rh * 0.050, Rh * 0.32, Rh * 0.078, Rh * 0.29);
+      } else {
+        ctx.moveTo(-Rh * 0.075, Rh * 0.26);
+        ctx.quadraticCurveTo(0, Rh * 0.31, Rh * 0.075, Rh * 0.26);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    ctx.restore();
+
+    /* ---------- 近景光尘 ---------- */
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const driftRange = Rh * 4.2;
+    for (const p of dust) {
+      const a = p.angle + t * p.speed * MOTION * 0.5;
+      const px = cx + Math.cos(a) * Rh * p.orbit * 1.7;
+      const raw = t * p.drift * (6 + s.rise * 22) * MOTION + p.seed * 1000;
+      const drift = ((raw % 1000) + 1000) % 1000;
+      const py = cy + Rh * 1.9 - (drift / 1000) * driftRange;
+      const alpha = (0.08 + 0.20 * p.seed) * (0.45 + gI);
+      ctx.fillStyle = rgba(glow, alpha);
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    /* ---------- 情绪特效 ---------- */
+
+    if (state.key === 'sleepy') {
+      ctx.save();
+      for (let i = 0; i < 3; i++) {
+        const p = (t * 0.32 + i / 3) % 1;
+        const zx = cx + Rh * 0.52 + p * Rh * 0.44;
+        const zy = cy - Rh * 0.82 - p * Rh * 0.64;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.55;
+        ctx.fillStyle = rgba(accent, 1);
+        ctx.font = '600 ' + Math.round(Rh * 0.10 + p * Rh * 0.07) + 'px "JetBrains Mono", monospace';
+        ctx.fillText('z', zx, zy);
+      }
+      ctx.restore();
+    }
+
+    if (state.key === 'happy' || state.key === 'curious') {
+      const amount = state.key === 'happy' ? 5 : 3;
+      for (let i = 0; i < amount; i++) {
+        const a = t * 0.5 + (i / amount) * Math.PI * 2;
+        const r = Rh * (1.20 + 0.12 * Math.sin(t * 1.7 + i));
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r * 0.72;
+        const tw = 0.35 + 0.65 * Math.abs(Math.sin(t * 2.2 + i * 1.7));
+        drawStar(ctx, x, y, Rh * 0.028 * (0.7 + tw * 0.6), tw * 0.55 * gI);
+      }
+    }
+
+    /* 思考的三点 */
+    if (state.key === 'thinking') {
+      for (let i = 0; i < 3; i++) {
+        const a = 0.22 + 0.6 * Math.max(0, Math.sin(t * 2.2 - i * 0.7));
+        ctx.fillStyle = rgba(accent, a);
+        ctx.beginPath();
+        ctx.arc(cx + Rh * 0.70 + i * Rh * 0.10, cy - Rh * 0.78, Rh * 0.023, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    /* 撒娇的小爱心 */
+    if (state.key === 'clingy') {
+      ctx.save();
+      for (let i = 0; i < 3; i++) {
+        const p = (t * 0.30 + i / 3) % 1;
+        const hx = cx + (i - 1) * Rh * 0.40 + Math.sin(t * 1.2 + i) * Rh * 0.05;
+        const hy = cy - Rh * 0.55 - p * Rh * 0.85;
+        const sz = Rh * 0.030;
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.75;
+        ctx.fillStyle = rgba(accent, 1);
+        ctx.beginPath();
+        ctx.moveTo(hx, hy + sz * 0.80);
+        ctx.bezierCurveTo(hx - sz * 1.40, hy - sz * 0.20,
+                          hx - sz * 0.60, hy - sz * 1.40, hx, hy - sz * 0.50);
+        ctx.bezierCurveTo(hx + sz * 0.60, hy - sz * 1.40,
+                          hx + sz * 1.40, hy - sz * 0.20, hx, hy + sz * 0.80);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ============================================================
+     loop
+     ============================================================ */
+
+  let last = performance.now() / 1000;
+  let clock = 0;
+
+  function frame(now) {
+    const t = now / 1000;
+    let dt = t - last;
+    last = t;
+    dt = clamp(dt, 0, 0.05);
+    clock += dt;
+
+    const k = 1 - Math.exp(-dt * 5.2);
+    for (const key in state.tgt) {
+      state.vals[key] = lerp(state.vals[key], state.tgt[key], k);
+    }
+
+    const kc = 1 - Math.exp(-dt * 4.2);
+    state.glow   = mix(state.glow,   state.glowT,   kc);
+    state.accent = mix(state.accent, state.accentT, kc);
+
+    render(clock);
+    requestAnimationFrame(frame);
+  }
+
+  /* ============================================================
+     interactions
+     ============================================================ */
+
+  const QUICK = {
+    pat:    { emo: 'shy',    label: '摸摸头' },
+    praise: { emo: 'happy',  label: '夸夸它' },
+    lull:   { emo: 'sleepy', label: '哄它睡觉' },
+  };
+
+  function quickAction(key) {
+    const q = QUICK[key];
+    if (!q) return;
+    setEmotion(q.emo, 'quick', `[${q.label}] → ${EMOTIONS[q.emo].code}`);
+    say(pick(REPLIES[q.emo]));
+  }
+
+  document.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', () => quickAction(btn.dataset.action));
+  });
+
+  document.getElementById('composer').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    const emo = route(text);
+    setEmotion(emo, 'user', `"${text.slice(0, 16)}${text.length > 16 ? '…' : ''}" → ${EMOTIONS[emo].code}`);
+    say(pick(REPLIES[emo]));
+    input.value = '';
+  });
+
+  /* force-state buttons */
+  forceGrid.innerHTML = Object.keys(EMOTIONS)
+    .map(k => `<button class="force" type="button" data-emo="${k}">${EMOTIONS[k].name}</button>`)
+    .join('');
+
+  forceGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.force');
+    if (!btn) return;
+    setEmotion(btn.dataset.emo, 'debug', `[force] → ${EMOTIONS[btn.dataset.emo].code}`);
+  });
+
+  /* light slider */
+  lightInput.addEventListener('input', () => {
+    state.light = parseFloat(lightInput.value);
+    lightVal.textContent = state.light.toFixed(2);
+  });
+
+  /* system message */
+  function sendSystem() {
+    const text = sysmsg.value.trim();
+    if (!text) return;
+    say(text, true);
+    addLog('system', text);
+    sysmsg.value = '';
+  }
+  syssend.addEventListener('click', sendSystem);
+  sysmsg.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); sendSystem(); }
+  });
+
+  /* debug panel toggle */
+  function setPanel(open) {
+    debugPanel.classList.toggle('open', open);
+    stage.classList.toggle('panel-open', open);
+    document.getElementById('debugToggle').setAttribute('aria-label', open ? '关闭状态调试台' : '打开状态调试台');
+  }
+
+  document.getElementById('debugToggle').addEventListener('click', () => {
+    setPanel(!debugPanel.classList.contains('open'));
+  });
+  document.getElementById('debugClose').addEventListener('click', () => setPanel(false));
+
+  document.addEventListener('keydown', (e) => {
+    const typing = /^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName);
+    if (typing) return;
+    if (e.key === 'd' || e.key === 'D') setPanel(!debugPanel.classList.contains('open'));
+    if (e.key === 'Escape') setPanel(false);
+  });
+
+  /* pointer tracking for eye contact */
+  stage.addEventListener('pointermove', (e) => {
+    pointer.x = (e.clientX / W - 0.5) * 2;
+    pointer.y = (e.clientY / H - 0.5) * 2;
+  }, { passive: true });
+
+  /* ============================================================
+     boot
+     ============================================================ */
+
+  resize();
+  setEmotion('idle', 'boot');
+  addLog('system', '角色已初始化 · EMO_IDLE_00');
+  requestAnimationFrame(frame);
+
+  setTimeout(() => say('嗨，我是 NOVA。今天想怎么过？'), 900);
+})();
+</script>
+</body>
+</html>
